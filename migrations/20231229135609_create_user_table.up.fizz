@@ -1,0 +1,12 @@
+create_table("user") {
+    t.Column("user_id", "integer", {primary: true})
+    t.Column("user_firstname", "string", {"default": ""})
+    t.Column("user_lastname", "string", {"default": ""})
+    t.Column("user_email", "string", {})
+    t.Column("user_password", "string", {"size": 60})
+    t.Column("user_access_level", "integer", {"default": 1})
+    t.Column("user_verified", "integer", {"default": 0})
+}
+
+rename_column("user", "created_at", "user_created_at")
+rename_column("user", "updated_at", "user_updated_at")
