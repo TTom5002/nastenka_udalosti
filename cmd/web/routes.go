@@ -2,6 +2,7 @@ package main
 
 import (
 	"nastenka_udalosti/internal/config"
+	"nastenka_udalosti/internal/handlers"
 	"net/http"
 
 	"github.com/go-chi/chi"
@@ -15,9 +16,13 @@ func routes(app *config.AppConfig) http.Handler {
 	mux.Use(NoSurf)
 	mux.Use(SessionLoad)
 
-	// TODO: Odstraň příklad
-	// mux.Get("/search-availability", handlers.Repo.Availability)
-	// mux.Post("/search-availability", handlers.Repo.PostAvailability)
+	mux.Get("/", handlers.Repo.Home)
+
+	mux.Get("/make-event", handlers.Repo.MakeEvent)
+	mux.Post("/make-event", handlers.Repo.PostEvent)
+
+	mux.Get("/user/login", handlers.Repo.Login)
+	mux.Post("/user/login", handlers.Repo.PostLogin)
 
 	fileServer := http.FileServer(http.Dir("./static/"))
 	mux.Handle("/static/*", http.StripPrefix("/static", fileServer))
@@ -25,11 +30,6 @@ func routes(app *config.AppConfig) http.Handler {
 	mux.Route("/admin", func(mux chi.Router) {
 		// TODO: Zruš komentář
 		// mux.Use(Auth)
-
-		// TODO: Odstraň příklad
-		// mux.Get("/reservations-calendar", handlers.Repo.AdminReservationsCalendar)
-		// mux.Post("/reservations-calendar", handlers.Repo.AdminPostReservationsCalendar)
-
 	})
 
 	return mux

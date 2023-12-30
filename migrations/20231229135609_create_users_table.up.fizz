@@ -1,4 +1,4 @@
-create_table("user") {
+create_table("users") {
     t.Column("user_id", "integer", {primary: true})
     t.Column("user_firstname", "string", {"default": ""})
     t.Column("user_lastname", "string", {"default": ""})
@@ -8,5 +8,5 @@ create_table("user") {
     t.Column("user_verified", "integer", {"default": 0})
 }
 
-rename_column("user", "created_at", "user_created_at")
-rename_column("user", "updated_at", "user_updated_at")
+rename_column("users", "created_at", "user_created_at")
+rename_column("users", "updated_at", "user_updated_at")
