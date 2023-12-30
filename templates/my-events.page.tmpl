@@ -24,11 +24,11 @@
             <tbody>
         {{range $events}}
             <tr>
-                <td>{{humanDate .Header}}</td>
-                <td>{{humanDate .Body}}</td>
+                <td>{{.Header}}</td>
+                <td>{{.Body}}</td>
                 <td>{{humanDate .CreatedAt}}</td>
                 <td>{{humanDate .UpdatedAt}}</td>
-                <td>{{humanDate .User.LastName}}</td>
+                <td>{{.User.LastName}}</td>
             </tr>
         {{end}}
             </tbody>
