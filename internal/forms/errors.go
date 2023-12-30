@@ -2,14 +2,12 @@ package forms
 
 type errors map[string][]string
 
-// TODO: Změň komentáře
-
-// Add adds an error message for a given form field
+// Add přidá chybovou zprávu pro dané pole formuláře
 func (e errors) Add(field, message string) {
 	e[field] = append(e[field], message)
 }
 
-// Get returns the first error message
+// Get vrací první chybovou zprávu
 func (e errors) Get(field string) string {
 	es := e[field]
 	if len(es) == 0 {

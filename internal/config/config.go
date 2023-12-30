@@ -7,9 +7,7 @@ import (
 	"github.com/alexedwards/scs/v2"
 )
 
-// TODO: Změň komentář
-
-// AppConfig holds the application config
+// AppConfig drží konfiguraci aplikace
 type AppConfig struct {
 	UseCache      bool
 	TemplateCache map[string]*template.Template

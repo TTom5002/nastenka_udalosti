@@ -15,12 +15,60 @@ func (m *postgresDBRepo) AllUsers() bool {
 	return true
 }
 
+// ShowEvents zobrazí určitý počet příspěvků
+func (m *postgresDBRepo) ShowEvents() ([]models.Event, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	var events []models.Event
+
+	// TODO: Kde je limit, tak budeš moct přidávat více příspěvků na stránku a offset jakou stránku
+	query := `
+		select e.event_id, e.event_header, e.event_body, e.event_created_at, e.event_updated_at,
+		u.user_id, u.user_lastname
+		from events e
+		left join users u on (e.event_author_id = u.user_id)
+		order by e.event_created_at desc
+		LIMIT 25 offset 0
+	`
+
+	rows, err := m.DB.QueryContext(ctx, query)
+	if err != nil {
+		return events, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var i models.Event
+		err := rows.Scan(
+			&i.ID,
+			&i.Header,
+			&i.Body,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.User.ID,
+			&i.User.LastName,
+		)
+
+		if err != nil {
+			return events, err
+		}
+		events = append(events, i)
+	}
+
+	if err = rows.Err(); err != nil {
+		return events, err
+	}
+
+	return events, nil
+}
+
 func (m *postgresDBRepo) InsertEvent(event models.Event) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
 	query := `
-		insert into event(event_header, event_body, event_author_id, event_created_at, event_updated_at)
+		insert into events(event_header, event_body, event_author_id, event_created_at, event_updated_at)
 		values ($1,$2,$3,$4,$5)
 	`
 	_, err := m.DB.ExecContext(ctx, query,
@@ -37,7 +85,7 @@ func (m *postgresDBRepo) InsertEvent(event models.Event) error {
 	return nil
 }
 
-// Authenticate authenticates a user
+// Authenticate ověří uživatele, že je přihlášen
 func (m *postgresDBRepo) Authenticate(email, testPassword string) (int, string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -60,3 +108,73 @@ func (m *postgresDBRepo) Authenticate(email, testPassword string) (int, string, 
 
 	return id, hashedPassword, nil
 }
+
+// Query až budu chtít vybírat podle role
+/*
+select e.event_id, e.event_header, e.event_body, e.event_created_at, e.event_updated_at,
+		u.user_id, u.user_lastname
+		from events e
+		left join users u on (e.event_author_id = u.user_id)
+		where u.user_access_level = 3
+		order by e.event_created_at asc
+		LIMIT 5 offset 0
+*/
+
+func (m *postgresDBRepo) ShowUserEvents(id int) ([]models.Event, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	var events []models.Event
+
+	// TODO: Kde je limit, tak budeš moct přidávat více příspěvků na stránku a offset jakou stránku
+	query := `
+		select e.event_id, e.event_header, e.event_body, e.event_created_at, e.event_updated_at,
+		u.user_id, u.user_lastname
+		from events e
+		left join users u on (e.event_author_id = u.user_id)
+		where u.user_id  = $1
+		order by e.event_created_at desc
+		LIMIT 25 offset 0
+	`
+
+	rows, err := m.DB.QueryContext(ctx, query, id)
+	if err != nil {
+		return events, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var i models.Event
+		err := rows.Scan(
+			&i.ID,
+			&i.Header,
+			&i.Body,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.User.ID,
+			&i.User.LastName,
+		)
+
+		if err != nil {
+			return events, err
+		}
+		events = append(events, i)
+	}
+
+	if err = rows.Err(); err != nil {
+		return events, err
+	}
+
+	return events, nil
+}
+
+// TODO: Kde je limit, tak budeš moct přidávat více příspěvků na stránku a offset jakou stránku
+// query := `
+// select e.event_id, e.event_header, e.event_body, e.event_created_at, e.event_updated_at,
+// u.user_id, u.user_lastname
+// from events e
+// left join users u on (e.event_author_id = u.user_id)
+// where u.user_id  = $1
+// order by e.event_created_at asc
+// LIMIT 5 offset 0
+// `

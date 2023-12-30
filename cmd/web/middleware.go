@@ -32,6 +32,7 @@ func Auth(next http.Handler) http.Handler {
 			http.Redirect(w, r, "/user/login", http.StatusSeeOther)
 			return
 		}
+		// TODO: Tady bude switch který se podívá jaký user_access_level má
 		next.ServeHTTP(w, r)
 	})
 }

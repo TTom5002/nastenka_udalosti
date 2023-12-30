@@ -1,12 +1,14 @@
 package main
 
 import (
+	"encoding/gob"
 	"fmt"
 	"log"
 	"nastenka_udalosti/internal/config"
 	"nastenka_udalosti/internal/driver"
 	"nastenka_udalosti/internal/handlers"
 	"nastenka_udalosti/internal/helpers"
+	"nastenka_udalosti/internal/models"
 	"nastenka_udalosti/internal/render"
 	"net/http"
 	"os"
@@ -43,12 +45,10 @@ func main() {
 }
 
 func run() (*driver.DB, error) {
-	// Co budu vkládat do relace
-	// gob.Register(models.Reservation{})
-	// gob.Register(models.User{})
-	// gob.Register(models.Room{})
-	// gob.Register(models.Restriction{})
-	// gob.Register(map[string]int{})
+	// TODO: Co budu vkládat do relace
+	gob.Register(models.Event{})
+	gob.Register(models.User{})
+	gob.Register(map[string]int{})
 
 	// TODO: Změň na true až půjde do produkce
 	app.InProduction = false

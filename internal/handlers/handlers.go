@@ -1,10 +1,12 @@
 package handlers
 
 import (
+	"fmt"
 	"log"
 	"nastenka_udalosti/internal/config"
 	"nastenka_udalosti/internal/driver"
 	"nastenka_udalosti/internal/forms"
+	"nastenka_udalosti/internal/helpers"
 	"nastenka_udalosti/internal/models"
 	"nastenka_udalosti/internal/render"
 	"nastenka_udalosti/internal/repository"
@@ -46,14 +48,26 @@ func NewHandlers(r *Repository) {
 }
 
 func (m *Repository) Home(w http.ResponseWriter, r *http.Request) {
-	render.Template(w, r, "home.page.tmpl", &models.TemplateData{})
+	events, err := m.DB.ShowEvents()
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
+
+	data := make(map[string]interface{})
+	data["events"] = events
+
+	render.Template(w, r, "home.page.tmpl", &models.TemplateData{
+		Data: data,
+	})
 }
 
 // MakeEvent ukáže formulář pro vytvoření příspěvku - HOTOVO
 func (m *Repository) MakeEvent(w http.ResponseWriter, r *http.Request) {
+
 	var emptyEvent models.Event
 	data := make(map[string]interface{})
-	data["reservation"] = emptyEvent
+	data["event"] = emptyEvent
 
 	render.Template(w, r, "make-event.page.tmpl", &models.TemplateData{
 		Form: forms.New(nil),
@@ -61,7 +75,7 @@ func (m *Repository) MakeEvent(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (m *Repository) PostEvent(w http.ResponseWriter, r *http.Request) {
+func (m *Repository) PostMakeEvent(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
 		m.App.Session.Put(r.Context(), "error", "Nelze parsovat formulář!")
@@ -69,15 +83,9 @@ func (m *Repository) PostEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: Musíš kurva přijít na to co má být v té závorce (probubly budeš muset vytáhnout id ze session od přihlášeného uživatele)
-	// authorID, err := strconv.Atoi("")
-	// if err != nil {
-	// 	m.App.Session.Put(r.Context(), "error", "Nepovedlo se ověřit uživatele!")
-	// 	http.Redirect(w, r, "/", http.StatusSeeOther)
-	// 	return
-	// }
-
-	authorID := 1
+	// TODO: Musíš kurva přijít na to jak udělat error check
+	// TODO: MOŽNÁ BUDEŠ POTOM MAZAT
+	authorID := m.App.Session.Get(r.Context(), "user_id").(int)
 
 	event := models.Event{
 		Header:   r.Form.Get("header"),
@@ -85,12 +93,13 @@ func (m *Repository) PostEvent(w http.ResponseWriter, r *http.Request) {
 		AuthorID: authorID,
 	}
 
+	fmt.Print(event)
+
 	form := forms.New(r.PostForm)
 
 	form.Required("header", "body")
 	// TODO: Délka nemusí být ale možná se bude hodit
 	// form.MinLength("header", 3)
-	// form.IsEmail("email")
 
 	if !form.Valid() {
 		data := make(map[string]interface{})
@@ -109,15 +118,18 @@ func (m *Repository) PostEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/make-event", http.StatusSeeOther)
+	m.App.Session.Put(r.Context(), "flash", "Úspěšně vytvořen příspěvek")
+	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
+// Login načte formulář pro přihlášení uživatele
 func (m *Repository) Login(w http.ResponseWriter, r *http.Request) {
 	render.Template(w, r, "login.page.tmpl", &models.TemplateData{
 		Form: forms.New(nil),
 	})
 }
 
+// PostLogin přihlásí uživatele
 func (m *Repository) PostLogin(w http.ResponseWriter, r *http.Request) {
 	_ = m.App.Session.RenewToken(r.Context())
 
@@ -150,4 +162,37 @@ func (m *Repository) PostLogin(w http.ResponseWriter, r *http.Request) {
 	m.App.Session.Put(r.Context(), "user_id", id)
 	m.App.Session.Put(r.Context(), "flash", "Úspěšně přihlášen")
 	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+// Logout odhlásí uživatele
+func (m *Repository) Logout(w http.ResponseWriter, r *http.Request) {
+	_ = m.App.Session.Destroy(r.Context())
+	_ = m.App.Session.RenewToken(r.Context())
+
+	m.App.Session.Put(r.Context(), "flash", "Odhlášen")
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+func (m *Repository) MyEvents(w http.ResponseWriter, r *http.Request) {
+
+	authorID := m.App.Session.Get(r.Context(), "user_id").(int)
+	// TODO: MOŽNÁ BUDEŠ POTOM MAZAT
+	if authorID == 0 {
+		m.App.Session.Put(r.Context(), "error", "Nepovedlo se ověřit uživatele!")
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+
+	events, err := m.DB.ShowUserEvents(authorID)
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
+
+	data := make(map[string]interface{})
+	data["events"] = events
+
+	render.Template(w, r, "my-events.page.tmpl", &models.TemplateData{
+		Data: data,
+	})
 }

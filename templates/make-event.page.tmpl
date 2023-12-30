@@ -4,7 +4,7 @@
 
 {{$event := index .Data "event"}}
 
-<form method="post" action="/make-event" class="" novalidate>
+<form method="post" action="/admin/make-event" class="" novalidate>
     <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
 
     <!-- TODO: Nezapomeň každý label a input jsou v divu tomu dej classu, label for a název, a pak input kde je tolik věcí že ani sám teď nevim -->
@@ -21,7 +21,7 @@
 
     <div class="">
         <label for="body">Text:</label>
-        {{with .Form.Errors.Get "header"}}
+        {{with .Form.Errors.Get "body"}}
             <label class="text-danger">{{.}}</label>
         {{end}}
         <input class=" {{with .Form.Errors.Get "body"}} is-invalid {{end}}"
