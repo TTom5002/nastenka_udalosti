@@ -179,6 +179,9 @@ func (m *postgresDBRepo) SignUpUser(user models.User) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
+	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(user.Password), 12)
+	user.Password = string(hashedPassword)
+
 	query := `
 		INSERT INTO users (user_firstname, user_lastname, user_email, user_password, user_created_at, user_updated_at)
 		VALUES ($1,$2,$3,$4,$5,$6)

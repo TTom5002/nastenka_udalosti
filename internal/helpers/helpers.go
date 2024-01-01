@@ -62,7 +62,7 @@ func GetAdminAccessLevel(r *http.Request) (bool, error) {
 	return true, nil
 }
 
-// TODO: někde implementuj
+// GetUserInfo získá potřebné informace od uživatele
 func GetUserInfo(r *http.Request) (models.User, error) {
 	userInfo, ok := app.Session.Get(r.Context(), "userInfo").(models.User)
 	if !ok {
