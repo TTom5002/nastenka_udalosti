@@ -7,7 +7,7 @@ import (
 	"github.com/justinas/nosurf"
 )
 
-// NoSurt adds CSRF protection on all POST requests
+// NoSurt přídá CSRF ochranu na každý POST request
 func NoSurf(next http.Handler) http.Handler {
 	csrfHandler := nosurf.New(next)
 
@@ -20,19 +20,46 @@ func NoSurf(next http.Handler) http.Handler {
 	return csrfHandler
 }
 
-// SessionLoad loads and saves the session on every request
+// SessionLoad nahraje a uloží relaci na každý request
 func SessionLoad(next http.Handler) http.Handler {
 	return session.LoadAndSave(next)
 }
 
+// Auth ověří, že je uživatel přihlášen
 func Auth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !helpers.IsAuthenticated(r) {
-			session.Put(r.Context(), "error", "Log in first!")
+		id, _ := helpers.IsAuthenticated(r)
+		if !id {
+			session.Put(r.Context(), "error", "Nejprve se musíte přihlásit!")
 			http.Redirect(w, r, "/user/login", http.StatusSeeOther)
 			return
 		}
-		// TODO: Tady bude switch který se podívá jaký user_access_level má
+		next.ServeHTTP(w, r)
+	})
+}
+
+// Verified ověří, jestli uživatel je ověřen
+func Verified(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ver, _ := helpers.IsVerified(r)
+		if !ver {
+			session.Put(r.Context(), "error", "Tvůj účet není ještě schválen!")
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+// Verified ověří, jestli uživatel je má dostatečná práva Admin (access_level = 3)
+func Admin(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		adminAccessLevel, _ := helpers.GetAdminAccessLevel(r)
+		if !adminAccessLevel {
+			session.Put(r.Context(), "error", "Nemáte dostatečná práva")
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
 		next.ServeHTTP(w, r)
 	})
 }

@@ -5,7 +5,7 @@ create_table("users") {
     t.Column("user_email", "string", {})
     t.Column("user_password", "string", {"size": 60})
     t.Column("user_access_level", "integer", {"default": 1})
-    t.Column("user_verified", "integer", {"default": 0})
+    t.Column("user_verified", "bool", {"default": false})
 }
 
 rename_column("users", "created_at", "user_created_at")

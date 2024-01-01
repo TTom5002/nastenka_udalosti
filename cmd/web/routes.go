@@ -18,25 +18,44 @@ func routes(app *config.AppConfig) http.Handler {
 
 	mux.Get("/", handlers.Repo.Home)
 
-	mux.Get("/user/login", handlers.Repo.Login)
-	mux.Post("/user/login", handlers.Repo.PostLogin)
+	mux.Route("/user", func(mux chi.Router) {
+		mux.Get("/login", handlers.Repo.Login)
+		mux.Post("/login", handlers.Repo.PostLogin)
 
-	// mux.Get("/user/signup", handlers.Repo.Signup)
-	// mux.Post("/user/signup", handlers.Repo.PostSignup)
+		mux.Get("/signup", handlers.Repo.Signup)
+		mux.Post("/signup", handlers.Repo.PostSignup)
 
-	mux.Get("/user/logout", handlers.Repo.Logout)
+		mux.Get("/logout", handlers.Repo.Logout)
+	})
+
+	mux.Route("/dashboard", func(mux chi.Router) {
+		mux.Use(Auth)
+		mux.Use(Verified)
+
+		mux.Route("/posts", func(mux chi.Router) {
+			mux.Get("/make-event", handlers.Repo.MakeEvent)
+			mux.Post("/make-event", handlers.Repo.PostMakeEvent)
+			mux.Get("/my-events", handlers.Repo.MyEvents)
+		})
+
+		// Profil
+		mux.Route("/profile", func(mux chi.Router) {
+			// mux.Get("/", handlers.Repo.ViewProfile)
+			// mux.Post("/edit", handlers.Repo.EditProfile)
+			// mux.Post("/edit", handlers.Repo.DeleteProfile)
+		})
+
+		mux.Route("/admin", func(mux chi.Router) {
+			mux.Use(Admin)
+			mux.Get("/", handlers.Repo.Home)
+			// mux.Get("/", handlers.Repo.ViewProfile)
+			// mux.Post("/edit", handlers.Repo.EditProfile)
+			// Další akce s profilem
+		})
+
+	})
 
 	fileServer := http.FileServer(http.Dir("./static/"))
 	mux.Handle("/static/*", http.StripPrefix("/static", fileServer))
-
-	mux.Route("/admin", func(mux chi.Router) {
-		// TODO: Zruš komentář
-		mux.Use(Auth)
-		mux.Get("/make-event", handlers.Repo.MakeEvent)
-		mux.Post("/make-event", handlers.Repo.PostMakeEvent)
-
-		mux.Get("/my-events", handlers.Repo.MyEvents)
-	})
-
 	return mux
 }

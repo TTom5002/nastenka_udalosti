@@ -12,6 +12,7 @@ import (
 	"nastenka_udalosti/internal/repository"
 	"nastenka_udalosti/internal/repository/dbrepo"
 	"net/http"
+	"time"
 )
 
 // TODO: Změň komentáře
@@ -83,14 +84,16 @@ func (m *Repository) PostMakeEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: Musíš kurva přijít na to jak udělat error check
-	// TODO: MOŽNÁ BUDEŠ POTOM MAZAT
-	authorID := m.App.Session.Get(r.Context(), "user_id").(int)
+	userInfo, err := helpers.GetUserInfo(r)
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
 
 	event := models.Event{
 		Header:   r.Form.Get("header"),
 		Body:     r.Form.Get("body"),
-		AuthorID: authorID,
+		AuthorID: userInfo.ID,
 	}
 
 	fmt.Print(event)
@@ -129,7 +132,7 @@ func (m *Repository) Login(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// PostLogin přihlásí uživatele
+// PostLogin příhlásí uživatele a získá od něm potřebné informace
 func (m *Repository) PostLogin(w http.ResponseWriter, r *http.Request) {
 	_ = m.App.Session.RenewToken(r.Context())
 
@@ -152,14 +155,22 @@ func (m *Repository) PostLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, _, err := m.DB.Authenticate(email, password)
+	user, err := m.DB.Authenticate(email, password)
 	if err != nil {
-		m.App.Session.Put(r.Context(), "error", "Invalid login credentials")
+		m.App.Session.Put(r.Context(), "error", "Chybné přihlašování údaje")
 		http.Redirect(w, r, "/user/login", http.StatusSeeOther)
 		return
 	}
 
-	m.App.Session.Put(r.Context(), "user_id", id)
+	userInfo := models.User{
+		ID:          user.ID,
+		FirstName:   user.FirstName,
+		LastName:    user.LastName,
+		AccessLevel: user.AccessLevel,
+		Verified:    user.Verified,
+	}
+
+	m.App.Session.Put(r.Context(), "userInfo", userInfo)
 	m.App.Session.Put(r.Context(), "flash", "Úspěšně přihlášen")
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
@@ -174,16 +185,13 @@ func (m *Repository) Logout(w http.ResponseWriter, r *http.Request) {
 }
 
 func (m *Repository) MyEvents(w http.ResponseWriter, r *http.Request) {
-
-	authorID := m.App.Session.Get(r.Context(), "user_id").(int)
-	// TODO: MOŽNÁ BUDEŠ POTOM MAZAT
-	if authorID == 0 {
-		m.App.Session.Put(r.Context(), "error", "Nepovedlo se ověřit uživatele!")
-		http.Redirect(w, r, "/", http.StatusSeeOther)
+	userInfo, err := helpers.GetUserInfo(r)
+	if err != nil {
+		helpers.ServerError(w, err)
 		return
 	}
 
-	events, err := m.DB.ShowUserEvents(authorID)
+	events, err := m.DB.ShowUserEvents(userInfo.ID)
 	if err != nil {
 		helpers.ServerError(w, err)
 		return
@@ -195,4 +203,60 @@ func (m *Repository) MyEvents(w http.ResponseWriter, r *http.Request) {
 	render.Template(w, r, "my-events.page.tmpl", &models.TemplateData{
 		Data: data,
 	})
+}
+
+func (m *Repository) Signup(w http.ResponseWriter, r *http.Request) {
+	render.Template(w, r, "signup.page.tmpl", &models.TemplateData{
+		Form: forms.New(nil),
+	})
+}
+
+// PostLogin přihlásí uživatele
+func (m *Repository) PostSignup(w http.ResponseWriter, r *http.Request) {
+	_ = m.App.Session.RenewToken(r.Context())
+
+	err := r.ParseForm()
+	if err != nil {
+		log.Println(err)
+	}
+
+	// email := r.Form.Get("email")
+	password := r.Form.Get("password")
+	// FIXME: Zjisti jestli bude potřeba případně odstraň
+	passwordver := r.Form.Get("passwordver")
+
+	fmt.Println(password)
+	fmt.Println(passwordver)
+
+	form := forms.New(r.PostForm)
+	form.Required("firstname", "lastname", "email", "password", "passwordver")
+	form.IsEmail("email")
+	// form.SamePassword("password", "passwordver")
+
+	user := models.User{
+		FirstName: r.Form.Get("firstname"),
+		LastName:  r.Form.Get("lastname"),
+		Email:     r.Form.Get("email"),
+		Password:  r.Form.Get("password"),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+
+	if !form.Valid() {
+		render.Template(w, r, "signup.page.tmpl", &models.TemplateData{
+			Form: form,
+		})
+		return
+	}
+
+	// TODO: Do database nahraj data
+	err = m.DB.SignUpUser(user)
+	if err != nil {
+		m.App.Session.Put(r.Context(), "error", "Registrace se nepovedla")
+		http.Redirect(w, r, "/user/singup/", http.StatusSeeOther)
+		return
+	}
+
+	m.App.Session.Put(r.Context(), "flash", "Úspěšně zaregistrován, vyčkejte na ověření")
+	http.Redirect(w, r, "/", http.StatusSeeOther)
 }

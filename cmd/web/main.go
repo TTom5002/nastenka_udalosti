@@ -69,7 +69,7 @@ func run() (*driver.DB, error) {
 
 	// Přípojení k databázi
 	log.Println("Connecting to database...")
-	// TODO:  Uprav název databáze
+	// TODO: Uprav název databáze
 	db, err := driver.ConnectSQL("host=localhost port=5432 dbname=eventboarddb user=postgres password=tom")
 	if err != nil {
 		log.Fatal("Cannot connect to database! Dying...")

@@ -61,6 +61,15 @@ func (f *Form) MinLength(field string, lenght int) bool {
 // IsEmail checks for valid email address
 func (f *Form) IsEmail(field string) {
 	if !govalidator.IsEmail(f.Get(field)) {
-		f.Errors.Add(field, "Invalid email address")
+		f.Errors.Add(field, "Neplatná emailová adresa")
 	}
 }
+
+// func (f *Form) SamePassword(password, passwordver string) bool {
+// 	if f.password != f.passwordver {
+// 		f.Errors.Add(password, "Hesla se neshodují")
+// 		f.Errors.Add(passwordver, "Hesla se neshodují")
+// 		return false
+// 	}
+// 	return true
+// }

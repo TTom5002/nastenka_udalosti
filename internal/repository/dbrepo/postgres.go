@@ -86,27 +86,34 @@ func (m *postgresDBRepo) InsertEvent(event models.Event) error {
 }
 
 // Authenticate ověří uživatele, že je přihlášen
-func (m *postgresDBRepo) Authenticate(email, testPassword string) (int, string, error) {
+func (m *postgresDBRepo) Authenticate(email, testPassword string) (models.User, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	var id int
-	var hashedPassword string
+	var u models.User
 
-	row := m.DB.QueryRowContext(ctx, "select user_id, user_password from users where user_email = $1", email)
-	err := row.Scan(&id, &hashedPassword)
+	row := m.DB.QueryRowContext(ctx, "select user_id, user_firstname, user_lastname, user_password, user_verified, user_access_level from users where user_email = $1", email)
+	err := row.Scan(
+		&u.ID,
+		&u.FirstName,
+		&u.LastName,
+		&u.Password,
+		&u.Verified,
+		&u.AccessLevel,
+	)
 	if err != nil {
-		return id, "", err
+		return models.User{}, err
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(testPassword))
+	err = bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(testPassword))
 	if err == bcrypt.ErrMismatchedHashAndPassword {
-		return 0, "", errors.New("incorrect password")
+		return models.User{}, errors.New("chybné heslo")
 	} else if err != nil {
-		return 0, "", err
+		return models.User{}, err
 	}
+	u.Password = ""
 
-	return id, hashedPassword, nil
+	return u, nil
 }
 
 // Query až budu chtít vybírat podle role
@@ -166,6 +173,29 @@ func (m *postgresDBRepo) ShowUserEvents(id int) ([]models.Event, error) {
 	}
 
 	return events, nil
+}
+
+func (m *postgresDBRepo) SignUpUser(user models.User) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	query := `
+		INSERT INTO users (user_firstname, user_lastname, user_email, user_password, user_created_at, user_updated_at)
+		VALUES ($1,$2,$3,$4,$5,$6)
+	`
+	_, err := m.DB.ExecContext(ctx, query,
+		user.FirstName,
+		user.LastName,
+		user.Email,
+		user.Password,
+		time.Now(),
+		time.Now(),
+	)
+
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // TODO: Kde je limit, tak budeš moct přidávat více příspěvků na stránku a offset jakou stránku

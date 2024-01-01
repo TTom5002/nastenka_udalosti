@@ -11,7 +11,7 @@ type User struct {
 	Email       string
 	Password    string
 	AccessLevel int
-	Verified    int
+	Verified    bool
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 }
