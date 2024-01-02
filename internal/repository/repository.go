@@ -9,6 +9,9 @@ type DatabaseRepo interface {
 	// Authenticate(email, testPassword string) (int, string, bool, int, error)
 	Authenticate(email, testPassword string) (models.User, error)
 	ShowEvents() ([]models.Event, error)
+	GetEventByID(event_id int) (models.Event, error)
 	ShowUserEvents(id int) ([]models.Event, error)
 	SignUpUser(user models.User) error
+	DeleteEventByID(eventID int) error
+	UpdateEventByID(event models.Event) error
 }

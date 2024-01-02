@@ -32,17 +32,28 @@ func routes(app *config.AppConfig) http.Handler {
 		mux.Use(Auth)
 		mux.Use(Verified)
 
-		mux.Route("/posts", func(mux chi.Router) {
-			mux.Get("/make-event", handlers.Repo.MakeEvent)
-			mux.Post("/make-event", handlers.Repo.PostMakeEvent)
-			mux.Get("/my-events", handlers.Repo.MyEvents)
-		})
+		// TODO: Aby šli posty otvírat i z admina
+		mux.Route("/cu", func(mux chi.Router) {
+			// mux.Use(IsAuthor)
+			mux.Route("/posts", func(mux chi.Router) {
 
-		// Profil
-		mux.Route("/profile", func(mux chi.Router) {
-			// mux.Get("/", handlers.Repo.ViewProfile)
-			// mux.Post("/edit", handlers.Repo.EditProfile)
-			// mux.Post("/edit", handlers.Repo.DeleteProfile)
+				mux.Get("/make-event", handlers.Repo.MakeEvent)
+				mux.Post("/make-event", handlers.Repo.PostMakeEvent)
+				mux.Get("/my-events", handlers.Repo.MyEvents)
+
+				//TODO: Tady ověření uživatele a id příspěvku... Je autor?
+
+				mux.Get("/show-event/{id}", handlers.Repo.EditEvent)
+				mux.Post("/show-event/{id}", handlers.Repo.PostUpdateEvent)
+				mux.Get("/delete-event/{id}", handlers.Repo.DeleteEvent)
+			})
+
+			// Profil
+			mux.Route("/profile", func(mux chi.Router) {
+				// mux.Get("/", handlers.Repo.ViewProfile)
+				// mux.Post("/edit", handlers.Repo.EditProfile)
+				// mux.Post("/delete", handlers.Repo.DeleteProfile)
+			})
 		})
 
 		mux.Route("/admin", func(mux chi.Router) {

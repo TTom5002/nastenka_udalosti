@@ -24,7 +24,12 @@
             <tbody>
         {{range $events}}
             <tr>
-                <td>{{.Header}}</td>
+                <td>
+                    <a href="/dashboard/posts/show-event/{{.ID}}">
+                        {{.Header}}
+                    </a>
+                    
+                </td>
                 <td>{{.Body}}</td>
                 <td>{{humanDate .CreatedAt}}</td>
                 <td>{{humanDate .UpdatedAt}}</td>

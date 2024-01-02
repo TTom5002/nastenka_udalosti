@@ -63,3 +63,14 @@ func Admin(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
+
+func IsAuthor(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		IsAuthor := false // TODO: Tady dodělej helper
+		if !IsAuthor {
+			http.Redirect(w, r, "/", http.StatusSeeOther) //TODO dodělej přesměrování funkce z helperu bude vracet src a bool -> přesměruje /dashboard/{src}/posts/my-events
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
