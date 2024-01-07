@@ -269,7 +269,7 @@ func (m *Repository) PostSignup(w http.ResponseWriter, r *http.Request) {
 
 func (m *Repository) EditEvent(w http.ResponseWriter, r *http.Request) {
 	exploded := strings.Split(r.RequestURI, "/")
-	event_id, err := strconv.Atoi(exploded[4])
+	event_id, err := strconv.Atoi(exploded[5])
 	if err != nil {
 		helpers.ServerError(w, err)
 		return
@@ -279,6 +279,12 @@ func (m *Repository) EditEvent(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		helpers.ServerError(w, err)
 		return
+	}
+
+	userInfo, _ := helpers.GetUserInfo(r)
+	if userInfo.ID != event.AuthorID {
+		m.App.Session.Put(r.Context(), "flash", "Nejste autorem tohodle příspěvku")
+		http.Redirect(w, r, "/dashboard/cu/posts/my-events", http.StatusSeeOther)
 	}
 
 	data := make(map[string]interface{})
@@ -299,7 +305,7 @@ func (m *Repository) PostUpdateEvent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	exploded := strings.Split(r.RequestURI, "/")
-	id, err := strconv.Atoi(exploded[4])
+	id, err := strconv.Atoi(exploded[5])
 	if err != nil {
 		helpers.ServerError(w, err)
 		return
@@ -330,14 +336,27 @@ func (m *Repository) PostUpdateEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	m.App.Session.Put(r.Context(), "flash", "Příspěvek se upravil")
-	http.Redirect(w, r, "/dashboard/posts/my-events", http.StatusSeeOther)
+	m.App.Session.Put(r.Context(), "error", "Příspěvek se upravil")
+	http.Redirect(w, r, "/dashboard/cu/posts/my-events", http.StatusSeeOther)
 }
 
 func (m *Repository) DeleteEvent(w http.ResponseWriter, r *http.Request) {
-	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
-	_ = m.DB.DeleteEventByID(id)
+	event_id, _ := strconv.Atoi(chi.URLParam(r, "id"))
+
+	event, err := m.DB.GetEventByID(event_id)
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
+
+	userInfo, _ := helpers.GetUserInfo(r)
+	if userInfo.ID != event.AuthorID {
+		m.App.Session.Put(r.Context(), "error", "Nejste autorem tohodle příspěvku")
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+	} else {
+		_ = m.DB.DeleteEventByID(event_id)
+	}
 
 	m.App.Session.Put(r.Context(), "flash", "Událost byla smazána")
-	http.Redirect(w, r, "/dashboard/posts/my-events", http.StatusSeeOther)
+	http.Redirect(w, r, "/dashboard/cu/posts/my-events", http.StatusSeeOther)
 }

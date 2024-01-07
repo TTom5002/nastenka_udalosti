@@ -4,7 +4,7 @@
 
 {{$event := index .Data "event"}}
 
-<form method="post" action="/dashboard/posts/show-event/{{$event.ID}}" class="" novalidate>
+<form method="post" action="/dashboard/cu/posts/show-event/{{$event.ID}}" class="" novalidate>
     <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
     
 
@@ -31,7 +31,7 @@
     </div>
     
     <hr>
-    <a href="/dashboard/posts/delete-event/{{$event.ID}}">
+    <a href="/dashboard/cu/posts/delete-event/{{$event.ID}}">
         Smazat
     </a>
     <input type="submit" value="Aktualizovat">

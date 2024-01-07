@@ -4,7 +4,7 @@
 
 {{$event := index .Data "event"}}
 
-<form method="post" action="/dashboard/posts/make-event" class="" novalidate>
+<form method="post" action="/dashboard/cu/posts/make-event" class="" novalidate>
     <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
 
     <!-- TODO: Nezapomeň každý label a input jsou v divu tomu dej classu, label for a název, a pak input kde je tolik věcí že ani sám teď nevim -->

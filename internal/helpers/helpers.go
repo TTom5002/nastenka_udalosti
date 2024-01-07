@@ -70,14 +70,3 @@ func GetUserInfo(r *http.Request) (models.User, error) {
 	}
 	return userInfo, nil
 }
-
-// func VerAuthor(r *http.Request) (bool, error) {
-// 	userInfo, ok := app.Session.Get(r.Context(), "userInfo").(models.User)
-// 	if !ok {
-// 		return false, errors.New("nepodařilo se přetypovat hodnotu na User")
-// 	}
-// 	// TODO porovnej a usoudi zda jsou stejný, jestli není autorizován, jestli jo, je autorizován
-// 	verAuthor := userInfo.ID
-// 	idStr := chi.URLParam(r, "id")
-// 	id, err := strconv.Atoi(idStr)
-// }

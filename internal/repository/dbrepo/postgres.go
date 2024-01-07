@@ -281,3 +281,35 @@ func (m *postgresDBRepo) DeleteEventByID(eventID int) error {
 // order by e.event_created_at asc
 // LIMIT 5 offset 0
 // `
+
+// VerIsAuthor zjistí jestli je uživatel autorem příspěvku
+func (m *postgresDBRepo) VerIsAuthor(eventID, userID int) (bool, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	query := `
+	SELECT CASE WHEN COUNT(*) > 0 THEN true ELSE false END AS event_author_id
+	FROM events
+	WHERE event_id = $1 AND event_author_id = $2
+	`
+
+	var IsAuthor bool
+
+	row := m.DB.QueryRowContext(ctx, query,
+		eventID,
+		userID,
+	)
+	err := row.Scan(
+		&IsAuthor,
+	)
+
+	if err != nil {
+		return false, err
+	}
+
+	if !IsAuthor {
+		return false, err
+	}
+
+	return true, err
+}
