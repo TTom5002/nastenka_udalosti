@@ -208,8 +208,13 @@ func (m *Repository) MyEvents(w http.ResponseWriter, r *http.Request) {
 }
 
 func (m *Repository) Signup(w http.ResponseWriter, r *http.Request) {
+	var user models.User
+	data := make(map[string]interface{})
+	data["usersignup"] = user
+
 	render.Template(w, r, "signup.page.tmpl", &models.TemplateData{
 		Form: forms.New(nil),
+		Data: data,
 	})
 }
 
@@ -245,12 +250,13 @@ func (m *Repository) PostSignup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// TODO: Dodělej aby se data při chybném poslání formuláře nemazaly
-	// data := make(map[string]interface{})
-	// data["events"] = events
+	data := make(map[string]interface{})
+	data["usersignup"] = user
 
 	if !form.Valid() {
 		render.Template(w, r, "signup.page.tmpl", &models.TemplateData{
 			Form: form,
+			Data: data,
 		})
 		return
 	}
@@ -336,12 +342,15 @@ func (m *Repository) PostUpdateEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	m.App.Session.Put(r.Context(), "error", "Příspěvek se upravil")
+	m.App.Session.Put(r.Context(), "flash", "Příspěvek se upravil")
 	http.Redirect(w, r, "/dashboard/cu/posts/my-events", http.StatusSeeOther)
 }
 
 func (m *Repository) DeleteEvent(w http.ResponseWriter, r *http.Request) {
-	event_id, _ := strconv.Atoi(chi.URLParam(r, "id"))
+	event_id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		return
+	}
 
 	event, err := m.DB.GetEventByID(event_id)
 	if err != nil {
@@ -349,12 +358,18 @@ func (m *Repository) DeleteEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userInfo, _ := helpers.GetUserInfo(r)
+	userInfo, err := helpers.GetUserInfo(r)
+	if err != nil {
+		return
+	}
 	if userInfo.ID != event.AuthorID {
 		m.App.Session.Put(r.Context(), "error", "Nejste autorem tohodle příspěvku")
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 	} else {
-		_ = m.DB.DeleteEventByID(event_id)
+		err = m.DB.DeleteEventByID(event_id)
+		if err != nil {
+			return
+		}
 	}
 
 	m.App.Session.Put(r.Context(), "flash", "Událost byla smazána")
