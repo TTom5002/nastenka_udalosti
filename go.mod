@@ -13,7 +13,6 @@ require (
 )
 
 require (
-	github.com/gobuffalo/buffalo-pop/v2 v2.0.0
 	github.com/gofrs/uuid v4.2.0+incompatible // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect
