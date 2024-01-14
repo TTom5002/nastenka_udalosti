@@ -92,11 +92,12 @@ func (m *postgresDBRepo) Authenticate(email, testPassword string) (models.User, 
 
 	var u models.User
 
-	row := m.DB.QueryRowContext(ctx, "select user_id, user_firstname, user_lastname, user_password, user_verified, user_access_level from users where user_email = $1", email)
+	row := m.DB.QueryRowContext(ctx, "select user_id, user_firstname, user_lastname, user_email, user_password, user_verified, user_access_level from users where user_email = $1", email)
 	err := row.Scan(
 		&u.ID,
 		&u.FirstName,
 		&u.LastName,
+		&u.Email,
 		&u.Password,
 		&u.Verified,
 		&u.AccessLevel,
@@ -312,4 +313,87 @@ func (m *postgresDBRepo) VerIsAuthor(eventID, userID int) (bool, error) {
 	}
 
 	return true, err
+}
+
+// ShowEvents zobrazí určitý počet příspěvků
+func (m *postgresDBRepo) ShowUnverifiedUsers() ([]models.User, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	var users []models.User
+
+	// TODO: Kde je limit, tak budeš moct přidávat více příspěvků na stránku a offset jakou stránku
+	query := `
+		select user_id, user_firstname, user_lastname, user_email, user_updated_at
+		from users
+		where user_verified = false
+		order by user_updated_at desc
+	`
+
+	rows, err := m.DB.QueryContext(ctx, query)
+	if err != nil {
+		return users, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var i models.User
+		err := rows.Scan(
+			&i.ID,
+			&i.FirstName,
+			&i.LastName,
+			&i.Email,
+			&i.UpdatedAt,
+		)
+
+		if err != nil {
+			return users, err
+		}
+		users = append(users, i)
+	}
+
+	if err = rows.Err(); err != nil {
+		return users, err
+	}
+
+	return users, nil
+}
+
+func (m *postgresDBRepo) UpdateProfile(user models.User) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	query := `
+		update users set user_firstname = $1, user_lastname = $2, user_updated_at = $3 where user_id = $4
+	`
+
+	_, err := m.DB.ExecContext(ctx, query,
+		user.FirstName,
+		user.LastName,
+		time.Now(),
+		user.ID,
+	)
+	if err != nil {
+		return err
+	}
+
+	if user.Password != "" {
+
+		hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(user.Password), 12)
+		user.Password = string(hashedPassword)
+
+		query := `
+		update users set user_password = $1 where user_id = $2
+		`
+
+		_, err := m.DB.ExecContext(ctx, query,
+			user.Password,
+			user.ID,
+		)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

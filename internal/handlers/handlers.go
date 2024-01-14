@@ -168,6 +168,7 @@ func (m *Repository) PostLogin(w http.ResponseWriter, r *http.Request) {
 		ID:          user.ID,
 		FirstName:   user.FirstName,
 		LastName:    user.LastName,
+		Email:       user.Email,
 		AccessLevel: user.AccessLevel,
 		Verified:    user.Verified,
 	}
@@ -374,4 +375,94 @@ func (m *Repository) DeleteEvent(w http.ResponseWriter, r *http.Request) {
 
 	m.App.Session.Put(r.Context(), "flash", "Událost byla smazána")
 	http.Redirect(w, r, "/dashboard/cu/posts/my-events", http.StatusSeeOther)
+}
+
+func (m *Repository) ShowAllUnverifiedUsers(w http.ResponseWriter, r *http.Request) {
+	users, err := m.DB.ShowUnverifiedUsers()
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
+
+	data := make(map[string]interface{})
+	data["users"] = users
+
+	render.Template(w, r, "admin-unverifiedusers.page.tmpl", &models.TemplateData{
+		Data: data,
+	})
+}
+
+func (m *Repository) EditProfile(w http.ResponseWriter, r *http.Request) {
+	userInfo, err := helpers.GetUserInfo(r)
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
+
+	data := make(map[string]interface{})
+	data["userInfo"] = userInfo
+
+	render.Template(w, r, "profile.page.tmpl", &models.TemplateData{
+		Data: data,
+		Form: forms.New(nil),
+	})
+}
+
+func (m *Repository) PostEditProfile(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
+
+	userInfo, err := helpers.GetUserInfo(r)
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
+
+	user := models.User{
+		ID:        userInfo.ID,
+		FirstName: r.Form.Get("firstname"),
+		LastName:  r.Form.Get("lastname"),
+		Password:  r.Form.Get("password"),
+	}
+
+	data := make(map[string]interface{})
+	data["userInfo"] = user
+
+	form := forms.New(r.PostForm)
+	form.Required("firstname", "lastname")
+	if !form.Valid() {
+		render.Template(w, r, "profile.page.tmpl", &models.TemplateData{
+			Data: data,
+			Form: form,
+		})
+		return
+	}
+
+	err = m.DB.UpdateProfile(user)
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
+
+	userInfo, err = helpers.GetUserInfo(r)
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
+
+	newUserInfo := models.User{
+		ID:          userInfo.ID,
+		FirstName:   user.FirstName,
+		LastName:    user.LastName,
+		Email:       userInfo.Email,
+		AccessLevel: userInfo.AccessLevel,
+		Verified:    userInfo.Verified,
+	}
+
+	m.App.Session.Put(r.Context(), "userInfo", newUserInfo)
+	m.App.Session.Put(r.Context(), "flash", "Profil se upravil")
+	http.Redirect(w, r, "/dashboard/cu/profile", http.StatusSeeOther)
 }

@@ -34,7 +34,7 @@ func routes(app *config.AppConfig) http.Handler {
 
 		// TODO: Aby šli posty otvírat i z admina
 		mux.Route("/cu", func(mux chi.Router) {
-			// mux.Use(IsAuthor)
+			//TODO: mux.Use(IsAuthor) - Co tohle dělá? asi to smaž později
 			mux.Route("/posts", func(mux chi.Router) {
 
 				mux.Get("/make-event", handlers.Repo.MakeEvent)
@@ -50,8 +50,8 @@ func routes(app *config.AppConfig) http.Handler {
 
 			// Profil
 			mux.Route("/profile", func(mux chi.Router) {
-				// mux.Get("/", handlers.Repo.ViewProfile)
-				// mux.Post("/edit", handlers.Repo.EditProfile)
+				mux.Get("/", handlers.Repo.EditProfile)
+				mux.Post("/", handlers.Repo.PostEditProfile)
 				// mux.Post("/delete", handlers.Repo.DeleteProfile)
 			})
 		})
@@ -59,6 +59,7 @@ func routes(app *config.AppConfig) http.Handler {
 		mux.Route("/admin", func(mux chi.Router) {
 			mux.Use(Admin)
 			mux.Get("/", handlers.Repo.Home)
+			mux.Get("/unverified-users", handlers.Repo.ShowAllUnverifiedUsers)
 			// mux.Get("/", handlers.Repo.ViewProfile)
 			// mux.Post("/edit", handlers.Repo.EditProfile)
 			// Další akce s profilem
