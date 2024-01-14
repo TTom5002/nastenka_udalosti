@@ -132,8 +132,6 @@ func (m *Repository) Login(w http.ResponseWriter, r *http.Request) {
 	render.Template(w, r, "login.page.tmpl", &models.TemplateData{
 		Form: forms.New(nil),
 	})
-	//TODO: Možná bude potřeba odstranit
-	m.App.Session.Destroy(r.Context())
 }
 
 // PostLogin příhlásí uživatele a získá od něm potřebné informace
