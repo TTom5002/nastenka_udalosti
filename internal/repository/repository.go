@@ -16,4 +16,5 @@ type DatabaseRepo interface {
 	UpdateEventByID(event models.Event) error
 	ShowUnverifiedUsers() ([]models.User, error)
 	UpdateProfile(user models.User) error
+	DeleteUserByID(userID int) error
 }

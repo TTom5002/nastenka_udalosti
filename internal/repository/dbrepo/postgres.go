@@ -397,3 +397,19 @@ func (m *postgresDBRepo) UpdateProfile(user models.User) error {
 
 	return nil
 }
+
+func (m *postgresDBRepo) DeleteUserByID(userID int) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	query := `
+		delete from users where user_id = $1
+	`
+
+	_, err := m.DB.ExecContext(ctx, query, userID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

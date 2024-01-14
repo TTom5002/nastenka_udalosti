@@ -132,6 +132,8 @@ func (m *Repository) Login(w http.ResponseWriter, r *http.Request) {
 	render.Template(w, r, "login.page.tmpl", &models.TemplateData{
 		Form: forms.New(nil),
 	})
+	//TODO: Možná bude potřeba odstranit
+	m.App.Session.Destroy(r.Context())
 }
 
 // PostLogin příhlásí uživatele a získá od něm potřebné informace
@@ -366,11 +368,12 @@ func (m *Repository) DeleteEvent(w http.ResponseWriter, r *http.Request) {
 	if userInfo.ID != event.AuthorID {
 		m.App.Session.Put(r.Context(), "error", "Nejste autorem tohodle příspěvku")
 		http.Redirect(w, r, "/", http.StatusSeeOther)
-	} else {
-		err = m.DB.DeleteEventByID(event_id)
-		if err != nil {
-			return
-		}
+		return
+	}
+
+	err = m.DB.DeleteEventByID(event_id)
+	if err != nil {
+		return
 	}
 
 	m.App.Session.Put(r.Context(), "flash", "Událost byla smazána")
@@ -465,4 +468,30 @@ func (m *Repository) PostEditProfile(w http.ResponseWriter, r *http.Request) {
 	m.App.Session.Put(r.Context(), "userInfo", newUserInfo)
 	m.App.Session.Put(r.Context(), "flash", "Profil se upravil")
 	http.Redirect(w, r, "/dashboard/cu/profile", http.StatusSeeOther)
+}
+
+func (m *Repository) DeleteProfile(w http.ResponseWriter, r *http.Request) {
+	user_id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		return
+	}
+
+	userInfo, err := helpers.GetUserInfo(r)
+	if err != nil {
+		return
+	}
+	if userInfo.ID != user_id {
+		m.App.Session.Put(r.Context(), "error", "Nemáte oprávnění")
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+
+	err = m.DB.DeleteUserByID(user_id)
+	if err != nil {
+		return
+	}
+
+	m.App.Session.Destroy(r.Context())
+	m.App.Session.Put(r.Context(), "flash", "Uživatel byl smazán")
+	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
